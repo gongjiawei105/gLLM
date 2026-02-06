@@ -1,5 +1,4 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
-import { useEffect, useState } from "react"
 import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import MainMenu from "./pages/MainMenu";
@@ -14,17 +13,6 @@ const MOCK_USER = {
 };
 
 export default function App() {
-
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (!MOCK_USER.isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
-    // Strict Check for Retired Users
-    if (MOCK_USER.role === UserRole.RETIREDUSER) {
-      return <Navigate to="/retired-access" replace />;
-    }
-    return children;
-  };
 
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!MOCK_USER.isAuthenticated) {
