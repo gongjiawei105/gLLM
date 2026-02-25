@@ -12,7 +12,7 @@ const CURRENT_USER = {
   email: "n.englert@psu.edu",
   firstName: "Nathan",
   lastName: "Englert",
-  role: UserRole.ADMIN
+  role: UserRole.REGUSER
 };
 
 export default function MainMenu() {
