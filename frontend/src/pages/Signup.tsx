@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { CheckCircle2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -8,6 +9,10 @@ import { Logo } from "@/components/ui/Logo"
 import { cn } from "@/lib/utils"
 
 export default function Signup() {
+  const navigate = useNavigate();
+
+  const [submitted, setSubmitted] = useState(false)
+
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [username, setUsername] = useState("")
@@ -29,9 +34,30 @@ export default function Signup() {
     }
 
     setError("")
-    alert(
-      `Signup clicked (UI only)\n\nFirst: ${firstName}\nLast: ${lastName}\nUsername: ${username}\nEmail: ${email}`
-    )
+    setSubmitted(true)
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6 font-sans">
+        <Card className="max-w-md w-full border-border shadow-lg animate-in fade-in zoom-in duration-300">
+          <CardContent className="pt-10 pb-10 text-center space-y-6">
+            <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight">Request Submitted</h2>
+              <p className="text-muted-foreground">
+                Your account creation request has been sent to the administration team. You will be notified via the email your provided once your request is reviewed.
+              </p>
+            </div>
+            <Button onClick={() => navigate("/login")} className="w-full">
+              Return to Sign in
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -43,7 +69,7 @@ export default function Signup() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Create an account</CardTitle>
+            <CardTitle>Submit a Request to Create an Account</CardTitle>
             <CardDescription>Enter your details below.</CardDescription>
           </CardHeader>
 

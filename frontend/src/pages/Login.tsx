@@ -19,7 +19,7 @@ export default function Login() {
 
         <Card className="border-border">
           <CardHeader>
-            <CardTitle>Sign in</CardTitle>
+            <CardTitle>Sign In</CardTitle>
             <CardDescription>Use your username and password.</CardDescription>
           </CardHeader>
 
