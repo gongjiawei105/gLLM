@@ -4,8 +4,16 @@ from typing import Dict, Optional
 import chainlit as cl
 from chainlit.types import ThreadDict
 from openai import AsyncOpenAI
+from jwt.exceptions import InvalidTokenError
+import http
+import jwt
 
 from src.services.promptservice import PromptService
+from src.services.adminservice import AdminService
+from src.db.database import get_db
+from src.core.config import Settings
+from src.models.auth import TokenData
+from src.schema.models import UserRole
 
 client = AsyncOpenAI(base_url="http://localhost:8000/v1", api_key="empty")
 cl.instrument_openai()
@@ -31,7 +39,51 @@ async def on_chat_resume(thread: ThreadDict):
 
 @cl.header_auth_callback
 def header_auth_callback(headers: Dict) -> Optional[cl.User]:
-    return None
+    print("poopie")
+    cookie_header = headers.get("cookie") or headers.get("Cookie")
+
+    if not cookie_header:
+        print("DEBUG: No cookies found in headers.")
+        return None
+
+    cookie = http.cookies.SimpleCookie()
+    cookie.load(cookie_header)
+
+    if "access_token" not in cookie:
+        print("DEBUG: 'access_token' cookie missing.")
+        return None
+
+    token = cookie["access_token"].value
+
+    app_settings = Settings()
+
+    try:
+        db = get_db()
+        admin_service = AdminService()
+        payload = jwt.decode(
+            token, app_settings.SECRET_KEY, algorithms=[app_settings.ALGORITHM]
+        )
+        username = payload.get("sub")
+        if username is None:
+            raise Exception("Invalid Token. No username.")
+        token_data = TokenData(username=username)
+        user = admin_service.get_user_from_identifier(
+            identifier=token_data.username, db=db
+        )
+    except InvalidTokenError:
+        raise Exception("Invalid Token Error")
+    except Exception:
+        return None
+
+    if user is None:
+        return None
+    elif user.role == UserRole.unauthorized:
+        return None
+
+    return cl.User(
+        identifier=user.identifier,
+        metadata={"role": f"{user.role}", "provider": "header"},
+    )
 
 
 @cl.on_chat_start

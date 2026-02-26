@@ -11,7 +11,10 @@ from src.core.core import oauth2_scheme
 from src.routers.adminrouter import AdminRouter
 from src.routers.authrouter import AuthRouter
 
+
 app = FastAPI()
+
+app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(AuthRouter)
 app.include_router(AdminRouter, dependencies=[Depends(oauth2_scheme)])
