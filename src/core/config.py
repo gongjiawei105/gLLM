@@ -1,9 +1,15 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# Resolve env file relative to this file so imports work regardless of CWD
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env", env_file_encoding="utf-8", case_sensitive=True
+        env_file=str(ENV_FILE), env_file_encoding="utf-8", case_sensitive=True
     )
 
     DATABASE_URL: str
@@ -14,3 +20,4 @@ class Settings(BaseSettings):
     AUTH_SECRET: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     HASH_ALGORITHM: str
+    CHAINLIT_AUTH_SECRET: str
