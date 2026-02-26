@@ -47,7 +47,7 @@ github = 'https://github.com/dylan-000/gLLM'
 
 default_theme = "light"
 default_sidebar_state = "open"
-cot = 'hidden'
+cot = 'full'
 alert_style = "classic"
 logo_file_url = ""
 default_avatar_file_url = ""

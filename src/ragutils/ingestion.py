@@ -1,11 +1,14 @@
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
-from vector_db import get_vector_db
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
+
+from src.ragutils.vector_db import get_vector_db
 
 # Get Vector DB Instance (Currently ChromaDB)
 db = get_vector_db()
 
 def ingest_file(file_path, file_id, file_name, file_type, user_id):
+    
+    print(file_path, file_name, file_type)
     docs = []
     
     # PDFs
@@ -30,7 +33,10 @@ def ingest_file(file_path, file_id, file_name, file_type, user_id):
         raw_docs = loader.load()
         
         # Determine Language
-        lang = Language.PYTHON if ".py" in file_name else Language.JS
+        lang = Language.PYTHON if ".py" in file_name else Language.MARKDOWN
+        
+        print(f'inside lang block, lang is {lang}')
+        
         splitter = RecursiveCharacterTextSplitter.from_language(
             language=lang, chunk_size=1000, chunk_overlap=100
         )

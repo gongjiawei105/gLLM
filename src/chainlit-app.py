@@ -14,12 +14,14 @@ from src.db.database import get_db
 from src.core.config import Settings
 from src.models.auth import TokenData
 from src.schema.models import UserRole
+from src.ragutils import ingestion
+from src.ragutils import retrieval
 
 client = AsyncOpenAI(base_url="http://localhost:8000/v1", api_key="empty")
 cl.instrument_openai()
 pm = PromptService()
 SYSTEM_PROMPT = pm.get_system()
-settings = {"model": "Kimi-VL-A3B-Thinking", "temperature": 0.7}  # Kimi-VL-A3B-Thinking
+settings = {"model": "Qwen/Qwen3-VL-8B-Instruct", "temperature": 0.7}
 
 
 @cl.on_chat_resume
@@ -105,22 +107,16 @@ async def on_message(cl_msg: cl.Message):
     user = cl.user_session.get("user")
     user_id = user.identifier if user else "anonymous"
 
-    # Lists for images and documents (will be parsed differently)
     IMAGES = []
     DOCS = []
-
-    # Separate images and documents
+    
     for file in cl_msg.elements:
         if "image" in file.mime:
             IMAGES.append(file)
         else:
             DOCS.append(file)
 
-    # If documents are present, ingest them into the vector database
     if DOCS:
-        # Send user a cue that documents are being processed
-        await cl.Message(content="Processing documents...").send()
-
         for doc in DOCS:
             ingestion.ingest_file(
                 file_path=doc.path,
@@ -129,9 +125,6 @@ async def on_message(cl_msg: cl.Message):
                 file_type=doc.mime, 
                 user_id=user_id
             )
-
-        # Notify user that documents have been processed
-        await cl.Message(content="Documents processed!").send()
 
     
     # Call RAG_utils retrieval module to get context
@@ -146,39 +139,26 @@ async def on_message(cl_msg: cl.Message):
     message = {"role": "user", "content": [{"type": "text", "text": final_query}]}
 
     # Now process images (if any), which will be appended to message["content"]
-    if IMAGES:
-        # Notify user that images are being processed
-        await cl.Message(content="Processing images...").send()
-
-        for image in IMAGES:
-            with open(image.path, "rb") as image_file:
-                # Convert image to base64 string for embedding in the message
-                b64_image = base64.b64encode(image_file.read()).decode("utf-8")
-            
-            # Append the image to message["content"]
-            message["content"].append(
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/png;base64,{b64_image}"},
-                },
-            )
-        # Notify user that images have been processed
-        await cl.Message(content="Images processed!").send()
+    for image in IMAGES:
+        with open(image.path, "rb") as image_file:
+            b64_image = base64.b64encode(image_file.read()).decode("utf-8")
+        message["content"].append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{b64_image}"},
+            },
+        )
 
 
-    # Append the new user message (with context and images) to the message history
     message_history = cl.user_session.get("message_history")
     message_history.append(message)
 
-    # Initialize an empty assistant message ready to stream tokens into
     msg = cl.Message(content="")
 
-    # Stream the response from the LLM
     stream = await client.chat.completions.create(
         messages=message_history, stream=True, **settings
     )
 
-    # As tokens stream in, append them to the assistant message and update the UI
     async for part in stream:
         if token := part.choices[0].delta.content or "":
             await msg.stream_token(token)

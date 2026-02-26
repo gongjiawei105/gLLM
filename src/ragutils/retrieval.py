@@ -1,4 +1,4 @@
-from vector_db import get_vector_db
+from src.ragutils.vector_db import get_vector_db
 
 # Initialize DB connection
 db = get_vector_db()
@@ -10,7 +10,7 @@ def get_context(query_text, user_id, n_results=5):
     """
     
     # DB Query
-    results = db.query(query_text, user_id, n_results)
+    results = db.search(query_text, user_id, n_results)
     
     # Merge into a single Context String
     context_string = ""
