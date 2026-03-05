@@ -9,7 +9,7 @@ from fastapi import Request, Response
 import http
 import jwt
 
-from src.services.promptservice import PromptService
+from src.services.promptservice import get_system
 from src.services.adminservice import get_user_from_identifier
 from src.db.database import get_db
 from src.core.config import Settings
@@ -22,8 +22,7 @@ from fastapi import Depends
 
 client = AsyncOpenAI(base_url="http://localhost:8000/v1", api_key="empty")
 cl.instrument_openai()
-pm = PromptService()
-SYSTEM_PROMPT = pm.get_system()
+SYSTEM_PROMPT = get_system()
 settings = {"model": "Qwen/Qwen3-VL-8B-Instruct", "temperature": 0.7}
 
 
@@ -61,8 +60,6 @@ def header_auth_callback(headers: Dict) -> Optional[cl.User]:
         username = payload.get("sub")
         if username is None:
             raise Exception("Invalid Token. No username.")
-
-            print(f"Username: {username}")
         token_data = TokenData(username=username)
         user = get_user_from_identifier(identifier=token_data.username, db=db)
     except InvalidTokenError:

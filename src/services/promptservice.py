@@ -4,7 +4,7 @@ scriptDir = os.path.dirname(os.path.abspath(__file__))
 promptsDir = os.path.join(scriptDir, "../prompts")
 
 
-def get_system(self) -> str:
+def get_system() -> str:
     """
     Returns the default system prompt.
 
