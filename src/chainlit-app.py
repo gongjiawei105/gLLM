@@ -60,13 +60,14 @@ def header_auth_callback(headers: Dict) -> Optional[cl.User]:
         expire_at = payload.get("exp")
         if username is None:
             return None
-        elif datetime.now(timezone.utc) > datetime.fromtimestamp(expire_at, timezone.utc):
+        elif datetime.now(timezone.utc) > datetime.fromtimestamp(
+            expire_at, timezone.utc
+        ):
             return None
         user = get_user_from_identifier(identifier=username, db=db)
     except InvalidTokenError:
-        raise Exception("Invalid Token Error")
+        return None
     except Exception as e:
-        print(f"ERROR OCCURRED DURING CHAINLIT HEADER AUTH VALIDATION:\n{e}\n")
         return None
 
     if user is None:
