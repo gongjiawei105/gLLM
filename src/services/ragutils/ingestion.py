@@ -1,7 +1,7 @@
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
-from src.ragutils.vector_db import get_vector_db
+from src.services.ragutils.vector_db import get_vector_db
 
 
 db = get_vector_db()
@@ -28,9 +28,7 @@ def ingest_file(file_path, file_id, file_name, file_type, user_id):
     else:
         loader = TextLoader(file_path)
         raw_docs = loader.load()
-
         lang = Language.PYTHON if ".py" in file_name else Language.MARKDOWN
-
         print(f"inside lang block, lang is {lang}")
 
         splitter = RecursiveCharacterTextSplitter.from_language(
@@ -47,7 +45,6 @@ def ingest_file(file_path, file_id, file_name, file_type, user_id):
 
     for i, chunk in enumerate(docs):
         chunk_id = f"{file_id}_{i}"
-
         meta = {
             "user_id": user_id,
             "source_file_id": file_id,
@@ -55,7 +52,6 @@ def ingest_file(file_path, file_id, file_name, file_type, user_id):
             "file_type": file_type,
             "page_number": chunk.metadata.get("page_number", 1),
         }
-
         ids.append(chunk_id)
         documents.append(chunk.page_content)
         metadatas.append(meta)
