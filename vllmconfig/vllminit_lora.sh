@@ -1,5 +1,9 @@
 #!/bin/bash
+#
 # Start vLLM with LoRA adapter support enabled.
+#
+# All settings can be overridden via environment variables or src/.env.
+# Start with conservative settings and increase after verifying stability.
 #
 # Usage:
 #   ./vllminit_lora.sh                           # Base model only, LoRA ready
@@ -9,6 +13,8 @@
 #   curl -X POST http://localhost:8000/v1/load_lora_adapter \
 #     -H "Content-Type: application/json" \
 #     -d '{"lora_name": "my_adapter", "lora_path": "/adapters/my_adapter"}'
+#
+# See HARDWARE_GUIDE.md for recommended settings per GPU.
 
 set -e
 
@@ -19,9 +25,13 @@ if [ -f "$SCRIPT_DIR/../src/.env" ]; then
     source "$SCRIPT_DIR/../src/.env"
 fi
 
-PORT=8000
-GPU_MEMORY_UTILIZATION=0.9
-dtype=auto
+# --- Configurable via .env or environment ---
+PORT="${VLLM_PORT:-8000}"
+GPU_MEMORY_UTILIZATION="${VLLM_GPU_MEM:-0.85}"
+MAX_MODEL_LEN="${VLLM_MAX_MODEL_LEN:-8192}"
+MAX_LORAS="${VLLM_MAX_LORAS:-2}"
+MAX_LORA_RANK="${VLLM_MAX_LORA_RANK:-64}"
+DTYPE="${VLLM_DTYPE:-auto}"
 LOG_FILE="$SCRIPT_DIR/vllm-logs/vllm.log"
 LORA_ADAPTER_PATH="${1:-}"
 ADAPTERS_DIR="$SCRIPT_DIR/../finetune/lora_adapter"
@@ -32,10 +42,10 @@ mkdir -p "$SCRIPT_DIR/vllm-logs"
 LORA_ARGS=""
 if [ -n "$LORA_ADAPTER_PATH" ]; then
     ADAPTER_NAME=$(basename "$LORA_ADAPTER_PATH")
-    LORA_ARGS="--enable-lora --max-loras 4 --max-lora-rank 64 --lora-modules {\"name\":\"$ADAPTER_NAME\",\"path\":\"/adapters/$ADAPTER_NAME\",\"base_model_name\":\"$MODEL\"}"
+    LORA_ARGS="--enable-lora --max-loras $MAX_LORAS --max-lora-rank $MAX_LORA_RANK --lora-modules {\"name\":\"$ADAPTER_NAME\",\"path\":\"/adapters/$ADAPTER_NAME\",\"base_model_name\":\"$MODEL\"}"
     VOLUME_ARGS="-v $LORA_ADAPTER_PATH:/adapters/$ADAPTER_NAME"
 else
-    LORA_ARGS="--enable-lora --max-loras 4 --max-lora-rank 64"
+    LORA_ARGS="--enable-lora --max-loras $MAX_LORAS --max-lora-rank $MAX_LORA_RANK"
     VOLUME_ARGS=""
     # Mount default adapters directory if it exists
     if [ -d "$ADAPTERS_DIR" ]; then
@@ -46,10 +56,16 @@ fi
 echo "========================================"
 echo "  vLLM with LoRA Support"
 echo "========================================"
-echo "Model:   $MODEL"
-echo "Port:    $PORT"
-echo "LoRA:    enabled (max 4 adapters, max rank 64)"
-echo "Adapter: ${LORA_ADAPTER_PATH:-none (load at runtime via API)}"
+echo "Model:        $MODEL"
+echo "Port:         $PORT"
+echo "Max context:  $MAX_MODEL_LEN tokens"
+echo "GPU mem util: $GPU_MEMORY_UTILIZATION"
+echo "Dtype:        $DTYPE"
+echo "LoRA:         enabled (max $MAX_LORAS adapters, max rank $MAX_LORA_RANK)"
+echo "Adapter:      ${LORA_ADAPTER_PATH:-none (load at runtime via API)}"
+echo ""
+echo "Tip: If you get OOM errors, reduce VLLM_MAX_MODEL_LEN, VLLM_GPU_MEM, or VLLM_MAX_LORAS in .env"
+echo "========================================"
 echo ""
 
 # Allow runtime LoRA loading/unloading
@@ -68,8 +84,8 @@ sudo docker run --runtime nvidia --gpus all \
     --trust-remote-code \
     --served-model-name $MODEL \
     --swap-space 0 \
-    --dtype $dtype \
+    --dtype $DTYPE \
     --gpu-memory-utilization $GPU_MEMORY_UTILIZATION \
-    --max-model-len 32768 \
+    --max-model-len $MAX_MODEL_LEN \
     $LORA_ARGS \
     2>&1 | tee "$LOG_FILE"
