@@ -45,9 +45,21 @@ async def on_chat_resume(thread: ThreadDict):
 
 @cl.header_auth_callback
 def header_auth_callback(headers: Dict) -> Optional[cl.User]:
+    import logging
+    logger = logging.getLogger("chainlit-auth")
     token = headers.get("bearer")
+    # Also check cookie set by /gllm-login endpoint
+    if not token:
+        cookie_header = headers.get("cookie", "")
+        for part in cookie_header.split(";"):
+            part = part.strip()
+            if part.startswith("gllm_bearer="):
+                token = part[len("gllm_bearer="):]
+                break
+    logger.info("Auth callback called, token present: %s", bool(token))
 
     if not token:
+        logger.warning("No bearer token in headers. Available keys: %s", list(headers.keys())[:10])
         return None
 
     app_settings = Settings()
@@ -60,16 +72,21 @@ def header_auth_callback(headers: Dict) -> Optional[cl.User]:
         )
         username = payload.get("sub")
         expire_at = payload.get("exp")
+        logger.info("JWT decoded, username: %s", username)
         if username is None:
             return None
         elif datetime.now(timezone.utc) > datetime.fromtimestamp(
             expire_at, timezone.utc
         ):
+            logger.warning("Token expired")
             return None
         user = get_user_from_identifier(identifier=username, db=db)
-    except InvalidTokenError:
+        logger.info("User found: %s, role: %s", user.identifier if user else None, user.role if user else None)
+    except InvalidTokenError as e:
+        logger.error("Invalid token: %s", e)
         return None
     except Exception as e:
+        logger.error("Auth error: %s", e, exc_info=True)
         return None
 
     if user is None:

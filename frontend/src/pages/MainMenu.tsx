@@ -18,10 +18,10 @@ export default function MainMenu() {
 
   const handleNavigation = (path: string) => {
     if (path === "/chat") {
-      // Send JWT as bearer header for Chainlit authentication
+      // Redirect through /gllm-login to set bearer cookie for Chainlit auth
       const token = getToken();
       if (token) {
-        window.location.href = `/gllm/?bearer=${encodeURIComponent(token)}`;
+        window.location.href = `/gllm-login?bearer=${encodeURIComponent(token)}`;
       } else {
         window.location.href = "/gllm/";
       }

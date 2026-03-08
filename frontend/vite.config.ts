@@ -12,15 +12,30 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/auth': {
+        target: 'http://localhost:8080',
+      },
+      '/admin': {
+        target: 'http://localhost:8080',
+      },
+      '/health': {
+        target: 'http://localhost:8080',
+      },
+      '/gllm-login': {
+        target: 'http://localhost:8080',
+      },
+      '/docs': {
+        target: 'http://localhost:8080',
+      },
       '/gllm': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8080',
         ws: true,
       },
       '/assets': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8080',
       },
       '/chainlit-auth': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8080',
       }
     },
   },

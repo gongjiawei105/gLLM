@@ -74,6 +74,14 @@ app.include_router(
         Depends(require_roles(UserRole.admin, UserRole.fine_tuner)),
     ],
 )
+@app.get("/gllm-login")
+def gllm_login(bearer: str):
+    """Redirect to Chainlit with the bearer token stored in a cookie."""
+    from fastapi.responses import RedirectResponse
+    response = RedirectResponse(url="/gllm/")
+    response.set_cookie(key="gllm_bearer", value=bearer, httponly=True, max_age=86400)
+    return response
+
 mount_chainlit(app=app, target="./chainlit-app.py", path="/gllm")
 
 if os.path.isdir("../frontend/dist"):
