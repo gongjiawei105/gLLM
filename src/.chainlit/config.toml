@@ -55,8 +55,8 @@ default_avatar_file_url = ""
 [[UI.header_links]]
     name = ""
     display_name = "Back"
-    icon_url = "http://localhost:8001/gllm/logo?theme=dark&"
-    url = "http://localhost:5173/"                                     # TODO: remove chriper artifact
+    icon_url = "/gllm/logo?theme=dark"
+    url = "/"
 
 [meta]
 generated_by = "2.9.2"
