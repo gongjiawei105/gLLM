@@ -24,6 +24,7 @@ dependencies = [
     "pyjwt>=2.11.0",
     "pypdf>=6.7.3",
     "scrypt>=0.9.4",
+    "slowapi>=0.1.9",
 ]
 
 [dependency-groups]

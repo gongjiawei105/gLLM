@@ -4,11 +4,16 @@ import time
 
 from chainlit.utils import mount_chainlit
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.core.core import oauth2_scheme
+from src.core.config import Settings
 from src.routers.adminrouter import AdminRouter
 from src.routers.authrouter import AuthRouter
 from src.routers.docsrouter import DocsRouter
@@ -17,7 +22,26 @@ from src.services.authservice import require_roles
 from src.schema.models import UserRole
 
 
-app = FastAPI()
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+app = FastAPI(title="gLLM", version="0.1.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# --- CORS ---
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# --- Health check ---
+@app.get("/health", tags=["system"])
+def health_check():
+    return {"status": "ok"}
 
 app.include_router(AuthRouter)
 app.include_router(

@@ -1,4 +1,5 @@
 import base64
+import os
 from typing import Dict, Optional
 
 import chainlit as cl
@@ -20,7 +21,8 @@ from src.services.ragutils import retrieval
 from datetime import datetime, timezone
 
 
-client = AsyncOpenAI(base_url="http://localhost:8000/v1", api_key="empty")
+VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8000")
+client = AsyncOpenAI(base_url=f"{VLLM_BASE_URL}/v1", api_key="empty")
 cl.instrument_openai()
 SYSTEM_PROMPT = get_system()
 settings = {"model": "Qwen/Qwen3-VL-8B-Instruct", "temperature": 0.7}
