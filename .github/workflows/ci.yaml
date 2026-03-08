@@ -36,7 +36,7 @@ jobs:
           ACCESS_TOKEN_EXPIRE_MINUTES: "30"
           HASH_ALGORITHM: "HS256"
           CHAINLIT_AUTH_SECRET: "ci-test-chainlit-secret"
-        run: uv run pytest ../tests -x --ignore=../tests/test_integration.py --ignore=../tests/test_ai_quality.py
+        run: uv run pytest ../tests -x --ignore=../tests/test_integration.py --ignore=../tests/test_ai_quality.py --cov=src --cov-report=term-missing --cov-report=xml:../coverage.xml
 
   frontend-build:
     runs-on: ubuntu-latest

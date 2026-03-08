@@ -1,19 +1,21 @@
 import json
+import logging
 import os
 import time
 
 from chainlit.utils import mount_chainlit
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.core.core import oauth2_scheme
 from src.core.config import Settings
+from src.core.logging import setup_logging
 from src.routers.adminrouter import AdminRouter
 from src.routers.authrouter import AuthRouter
 from src.routers.docsrouter import DocsRouter
@@ -21,11 +23,24 @@ from src.routers.finetuningrouter import FineTuningRouter
 from src.services.authservice import require_roles
 from src.schema.models import UserRole
 
+# --- Logging ---
+setup_logging(os.getenv("LOG_LEVEL", "INFO"))
+logger = logging.getLogger(__name__)
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 app = FastAPI(title="gLLM", version="0.1.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# --- Global error handler ---
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error("Unhandled error on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 # --- CORS ---
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
@@ -64,4 +79,4 @@ mount_chainlit(app=app, target="./chainlit-app.py", path="/gllm")
 if os.path.isdir("../frontend/dist"):
     app.mount("/", StaticFiles(directory="../frontend/dist", html=True), name="static")
 else:
-    print("No frontend dist folder detected. Skipping admin UI deployment")
+    logger.info("No frontend dist folder detected. Skipping admin UI deployment")
